@@ -5,7 +5,7 @@ const net = require('net');
 const app = express();
 const initialPort = process.env.PORT || 3000;
 
-// Serve static files from the current directory
+// Serve static files from the test directory
 app.use(express.static(__dirname));
 
 // Serve index.html for the root route

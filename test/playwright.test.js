@@ -1,11 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
 test('browser test runs successfully', async ({ page }) => {
-  // Capture console logs
-  page.on('console', msg => {
-    console.log(`Browser console [${msg.type()}]: ${msg.text()}`);
-  });
-
   await page.goto('http://localhost:3000');
 
   console.log('Page loaded');
@@ -31,11 +26,8 @@ test('browser test runs successfully', async ({ page }) => {
   // Check if the test completed successfully
   expect(completionText).toBe('Tests completed successfully');
 
-  // Get and log the full test results
+  // Optional: Check for any failed assertions in the test results
   const testResults = await page.textContent('#test-results');
-  console.log('Full test results:');
-  console.log(testResults);
-
-  // Check for any failed assertions in the test results
+  console.log('Test results:', testResults);
   expect(testResults).not.toContain('not ok');
 });

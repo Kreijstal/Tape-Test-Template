@@ -1,8 +1,6 @@
 const { spawn, exec, execSync } = require('child_process');
 const waitOn = require('wait-on');
 const net = require('net');
-const path = require('path');
-const fs = require('fs');
 
 console.log('Starting integration test...');
 
@@ -65,50 +63,39 @@ async function terminateProcessOnPort(port) {
   }
 }
 
-// Function to terminate the server
-function terminateServer(server) {
-  return new Promise((resolve) => {
-    if (!server) {
-      resolve();
-      return;
-    }
+let server;
+let serverPort;
+
+// Function to terminate the server and clean up
+async function cleanupServer() {
+  if (server) {
     console.log('Stopping server...');
-    
-    const forceKill = () => {
-      console.log('Force killing server...');
-      if (process.platform === 'win32') {
-        try {
-          execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-        } catch (error) {
-          console.error('Error force terminating server on Windows:', error);
-        }
-      } else {
-        try {
-          process.kill(server.pid, 'SIGKILL');
-        } catch (error) {
-          console.error('Error force terminating server:', error);
-        }
+    if (process.platform === 'win32') {
+      try {
+        execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
+      } catch (error) {
+        console.error('Error terminating server on Windows:', error);
       }
-    };
-
-    const timeout = setTimeout(() => {
-      console.log('Server did not terminate gracefully. Force killing...');
-      forceKill();
-    }, 5000);  // Wait 5 seconds before force kill
-
-    server.on('exit', () => {
-      clearTimeout(timeout);
-      console.log('Server process terminated.');
-      resolve();
+    } else {
+      server.kill('SIGKILL');
+    }
+    await new Promise((resolve) => {
+      server.on('exit', () => {
+        console.log('Server process terminated.');
+        resolve();
+      });
     });
-
-    server.kill('SIGINT');  // Try SIGINT first
-  });
+  }
+  if (serverPort) {
+    await terminateProcessOnPort(serverPort);
+  }
 }
 
-let server;
-
 async function runTests() {
+  const testTimeout = setTimeout(() => {
+    console.error('Test execution timed out after 5 minutes');
+    cleanupServer().then(() => process.exit(1));
+  }, 5 * 60 * 1000); // 5 minutes timeout
   try {
     // Check if port 3000 is already in use and terminate the process if it is
     const portInUse = await isPortInUse(3000);
@@ -119,15 +106,13 @@ async function runTests() {
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // Start the server from the test directory
-    console.log('Creating server from test directory...');
-    server = spawn('node', ['test/server.js'], { 
+    // Start the server
+    console.log('Creating server...');
+    server = spawn('npm', ['run', 'start'], { 
       stdio: 'pipe',
-      shell: true,
-      cwd: path.join(__dirname, '..')
+      shell: true
     });
 
-    let serverPort;
     server.stdout.on('data', (data) => {
       const output = data.toString();
       console.log(output);
@@ -140,10 +125,6 @@ async function runTests() {
 
     server.stderr.on('data', (data) => {
       console.error(`Server error: ${data}`);
-      if (data.toString().includes("Cannot find module './test/server.js'")) {
-        console.error("Error: server.js not found in the test directory. Please ensure it's in the correct location.");
-        process.exit(1);
-      }
     });
 
     // Wait for the server to be available
@@ -176,40 +157,42 @@ async function runTests() {
     // Run the Playwright tests
     console.log('Executing Playwright tests...');
     const playwrightStartTime = Date.now();
-    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} playwright test --config=playwright.config.js --reporter=list`);
+    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
     const playwrightEndTime = Date.now();
     console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
-
-
   } catch (error) {
     console.error('Error during test execution:', error);
     process.exitCode = 1;
   } finally {
-    // Ensure server is terminated
-    await terminateServer(server);
+    clearTimeout(testTimeout);
+    await cleanupServer();
     process.exit(process.exitCode);
   }
 }
 
-runTests();
+runTests().catch(async (error) => {
+  console.error('Unhandled error in runTests:', error);
+  await cleanupServer();
+  process.exit(1);
+});
 
 // Handle process termination
 process.on('SIGINT', async () => {
   console.log('Received SIGINT.');
-  await terminateServer(server);
-  process.exit(0);  // Ensure the process exits
+  await cleanupServer();
+  process.exit();
 });
 
 // Log any uncaught exceptions
 process.on('uncaughtException', async (error) => {
   console.error('Uncaught Exception:', error);
-  await terminateServer(server);
+  await cleanupServer();
   process.exit(1);
 });
 
 // Log any unhandled promise rejections
 process.on('unhandledRejection', async (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  await terminateServer(server);
+  await cleanupServer();
   process.exit(1);
 });

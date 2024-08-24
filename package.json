@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node test/test.js",
+    "test": "node test.js",
     "build-browser": "browserify test/test.js > test/test.browser.js",
-    "start": "node server.js",
+    "start": "node test/server.js",
     "test:playwright": "playwright test",
     "test:integration": "node test/test.integration.js"
   },
