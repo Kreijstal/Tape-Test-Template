@@ -176,7 +176,7 @@ async function runTests() {
     // Run the Playwright tests
     console.log('Executing Playwright tests...');
     const playwrightStartTime = Date.now();
-    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
+    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} playwright test --config=playwright.config.js`);
     const playwrightEndTime = Date.now();
     console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
 
@@ -189,8 +189,19 @@ async function runTests() {
 
     // Log contents of test-results directory
     console.log('Contents of test-results directory:');
-    const testResults = fs.readdirSync(testResultsDir);
-    console.log(testResults.length ? testResults : 'Directory is empty');
+    const testResults = fs.readdirSync(testResultsDir, { withFileTypes: true });
+    if (testResults.length) {
+      testResults.forEach(dirent => {
+        if (dirent.isDirectory()) {
+          const subDirContents = fs.readdirSync(path.join(testResultsDir, dirent.name));
+          console.log(`${dirent.name}/: ${subDirContents.join(', ')}`);
+        } else {
+          console.log(dirent.name);
+        }
+      });
+    } else {
+      console.log('Directory is empty');
+    }
 
   } catch (error) {
     console.error('Error during test execution:', error);

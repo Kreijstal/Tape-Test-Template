@@ -12,4 +12,9 @@ module.exports = defineConfig({
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
   },
+  reporter: [
+    ['html', { outputFolder: 'test-results/html-report' }],
+    ['json', { outputFile: 'test-results/results.json' }]
+  ],
+  outputDir: 'test-results',
 });
