@@ -79,3 +79,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Continuous Integration
+
+This project uses GitHub Actions for continuous integration. The workflow runs on push and pull requests to the main branch, testing the project on Node.js versions 14, 16, and 18.
+
+You can view the status of the latest builds in the Actions tab of the GitHub repository.
