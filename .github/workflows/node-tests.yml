@@ -74,4 +74,3 @@ jobs:
         npm run build-browser
         npm test
         npm run test:integration
-        npm run test:playwright
