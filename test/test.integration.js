@@ -118,9 +118,9 @@ async function runTests() {
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // Start the server
-    console.log('Creating server...');
-    server = spawn('npm', ['run', 'start'], { 
+    // Start the server from the test directory
+    console.log('Creating server from test directory...');
+    server = spawn('node', ['test/server.js'], { 
       stdio: 'pipe',
       shell: true,
       cwd: path.join(__dirname, '..')
@@ -139,6 +139,10 @@ async function runTests() {
 
     server.stderr.on('data', (data) => {
       console.error(`Server error: ${data}`);
+      if (data.toString().includes("Cannot find module './test/server.js'")) {
+        console.error("Error: server.js not found in the test directory. Please ensure it's in the correct location.");
+        process.exit(1);
+      }
     });
 
     // Wait for the server to be available
