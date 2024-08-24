@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js",
+    "test": "node test/test.js",
     "build-browser": "browserify test/test.js > test/test.browser.js",
     "start": "node test/server.js",
     "test:playwright": "playwright test",
