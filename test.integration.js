@@ -1,8 +1,21 @@
 const { spawn, exec, execSync } = require('child_process');
 const waitOn = require('wait-on');
-const path = require('path');
+const net = require('net');
 
 console.log('Starting integration test...');
+
+// Function to check if a port is in use
+function isPortInUse(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+      .once('error', () => resolve(true))
+      .once('listening', () => {
+        server.close();
+        resolve(false);
+      })
+      .listen(port);
+  });
+}
 
 // Function to run npm commands
 function runNpmCommand(command) {
@@ -22,137 +35,125 @@ function runNpmCommand(command) {
   });
 }
 
-// Start the server
-console.log('Creating server...');
-const server = spawn('npm', ['run', 'start'], { 
-  stdio: 'pipe',
-  shell: true
-});
-
-let serverPort;
-server.stdout.on('data', (data) => {
-  const output = data.toString();
-  console.log(output);
-  const match = output.match(/Server running at http:\/\/localhost:(\d+)/);
-  if (match) {
-    serverPort = parseInt(match[1], 10);
-    console.log(`Server started on port ${serverPort}`);
-  }
-});
-
-server.stderr.on('data', (data) => {
-  console.error(`Server error: ${data}`);
-});
-
-// Wait for the server to be available
-console.log('Waiting for server to be available...');
-const startTime = Date.now();
-
-const waitForServer = () => {
-  return new Promise((resolve, reject) => {
-    const checkInterval = setInterval(() => {
-      if (serverPort) {
-        clearInterval(checkInterval);
-        waitOn({ 
-          resources: [`http://localhost:${serverPort}/health`],
-          timeout: 60000, // 60 seconds timeout
-          interval: 100,  // Check every 100ms
-        })
-          .then(resolve)
-          .catch(reject);
+// Function to terminate the server
+function terminateServer(server) {
+  return new Promise((resolve) => {
+    if (!server) {
+      resolve();
+      return;
+    }
+    console.log('Stopping server...');
+    if (process.platform === 'win32') {
+      try {
+        execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
+      } catch (error) {
+        console.error('Error terminating server on Windows:', error);
       }
-    }, 100);
+    } else {
+      server.kill('SIGKILL');
+    }
+    server.on('exit', () => {
+      console.log('Server process terminated.');
+      resolve();
+    });
   });
-};
+}
 
-waitForServer()
-  .then(async () => {
+let server;
+
+async function runTests() {
+  try {
+    // Check if port 3000 is already in use
+    const portInUse = await isPortInUse(3000);
+    if (portInUse) {
+      console.error('Port 3000 is already in use. Please terminate the existing process and try again.');
+      process.exit(1);
+    }
+
+    // Start the server
+    console.log('Creating server...');
+    server = spawn('npm', ['run', 'start'], { 
+      stdio: 'pipe',
+      shell: true
+    });
+
+    let serverPort;
+    server.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log(output);
+      const match = output.match(/Server running at http:\/\/localhost:(\d+)/);
+      if (match) {
+        serverPort = parseInt(match[1], 10);
+        console.log(`Server started on port ${serverPort}`);
+      }
+    });
+
+    server.stderr.on('data', (data) => {
+      console.error(`Server error: ${data}`);
+    });
+
+    // Wait for the server to be available
+    console.log('Waiting for server to be available...');
+    const startTime = Date.now();
+
+    await new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (serverPort) {
+          clearInterval(checkInterval);
+          waitOn({ 
+            resources: [`http://localhost:${serverPort}/health`],
+            timeout: 60000, // 60 seconds timeout
+            interval: 100,  // Check every 100ms
+          })
+            .then(resolve)
+            .catch(reject);
+        }
+      }, 100);
+    });
+
     const endTime = Date.now();
     console.log(`Server is up and running after ${endTime - startTime}ms. Starting Playwright tests...`);
     
-    try {
-      // Install Playwright browsers without system dependencies
-      console.log('Installing Playwright browsers...');
-      try {
-        await runNpmCommand('npm exec -- playwright install chromium');
-        console.log('Playwright browsers installed successfully.');
-      } catch (error) {
-        console.error('Error installing Playwright browsers:', error);
-        throw error;
-      }
+    // Install Playwright browsers without system dependencies
+    console.log('Installing Playwright browsers...');
+    await runNpmCommand('npm exec -- playwright install chromium');
+    console.log('Playwright browsers installed successfully.');
 
-      // Run the Playwright tests
-      console.log('Executing Playwright tests...');
-      const playwrightStartTime = Date.now();
-      await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
-      const playwrightEndTime = Date.now();
-      console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
-    } catch (error) {
-      console.error('Playwright tests failed:', error);
-      process.exitCode = 1;
-    } finally {
-      // Kill the server
-      console.log('Stopping server...');
-      if (process.platform === 'win32') {
-        execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-      } else {
-        try {
-          process.kill(server.pid, 'SIGKILL');
-        } catch (error) {
-          if (error.code !== 'ESRCH') {
-            console.error('Error killing server process:', error);
-          }
-        }
-      }
-      console.log('Server process terminated.');
-      process.exit(process.exitCode);
-    }
-  })
-  .catch((error) => {
-    console.error('Error waiting for server:', error);
-    console.log('Stopping server due to error...');
-    if (process.platform === 'win32') {
-      execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-    } else {
-      process.kill(server.pid, 'SIGKILL');
-    }
-    console.log('Server process terminated.');
+    // Run the Playwright tests
+    console.log('Executing Playwright tests...');
+    const playwrightStartTime = Date.now();
+    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
+    const playwrightEndTime = Date.now();
+    console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
+  } catch (error) {
+    console.error('Error during test execution:', error);
     process.exitCode = 1;
+  } finally {
+    // Ensure server is terminated
+    await terminateServer(server);
     process.exit(process.exitCode);
-  });
+  }
+}
+
+runTests();
 
 // Handle process termination
-process.on('SIGINT', () => {
-  console.log('Received SIGINT. Stopping server...');
-  if (process.platform === 'win32') {
-    execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-  } else {
-    process.kill(server.pid, 'SIGKILL');
-  }
-  console.log('Server process terminated.');
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT.');
+  await terminateServer(server);
   process.exit();
 });
 
 // Log any uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error) => {
   console.error('Uncaught Exception:', error);
-  if (process.platform === 'win32') {
-    execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-  } else {
-    process.kill(server.pid, 'SIGKILL');
-  }
-  console.log('Server process terminated due to uncaught exception.');
+  await terminateServer(server);
   process.exit(1);
 });
 
 // Log any unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', async (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  if (process.platform === 'win32') {
-    execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-  } else {
-    process.kill(server.pid, 'SIGKILL');
-  }
-  console.log('Server process terminated due to unhandled rejection.');
+  await terminateServer(server);
   process.exit(1);
 });
