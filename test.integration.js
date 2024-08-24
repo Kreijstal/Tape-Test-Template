@@ -1,15 +1,24 @@
-const { spawn, execSync } = require('child_process');
+const { spawn, exec, execSync } = require('child_process');
 const waitOn = require('wait-on');
 const path = require('path');
 
 console.log('Starting integration test...');
 
-// Function to run commands in MSYS2 bash
-function runInMsys2Bash(command) {
-  const msys2Path = process.env.MSYS2_PATH || 'C:\\msys64\\usr\\bin\\bash.exe';
-  return execSync(`"${msys2Path}" -lc "${command}"`, { 
-    stdio: 'inherit',
-    shell: true
+// Function to run npm commands
+function runNpmCommand(command) {
+  return new Promise((resolve, reject) => {
+    exec(command, { env: process.env }, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error: ${error.message}`);
+        reject(error);
+        return;
+      }
+      if (stderr) {
+        console.error(`Stderr: ${stderr}`);
+      }
+      console.log(`Output: ${stdout}`);
+      resolve(stdout);
+    });
   });
 }
 
@@ -29,7 +38,7 @@ waitOn({
   timeout: 60000, // 60 seconds timeout
   interval: 100,  // Check every 100ms
 })
-  .then(() => {
+  .then(async () => {
     const endTime = Date.now();
     console.log(`Server is up and running after ${endTime - startTime}ms. Starting Playwright tests...`);
     
@@ -37,11 +46,7 @@ waitOn({
       // Install Playwright browsers
       console.log('Installing Playwright browsers...');
       try {
-        if (process.platform === 'win32') {
-          runInMsys2Bash('npm exec -- playwright install');
-        } else {
-          execSync('npm exec -- playwright install', { stdio: 'inherit' });
-        }
+        await runNpmCommand('npm exec -- playwright install');
         console.log('Playwright browsers installed successfully.');
       } catch (error) {
         console.error('Error installing Playwright browsers:', error);
@@ -51,11 +56,7 @@ waitOn({
       // Run the Playwright tests
       console.log('Executing Playwright tests...');
       const playwrightStartTime = Date.now();
-      if (process.platform === 'win32') {
-        runInMsys2Bash('npm run test:playwright');
-      } else {
-        execSync('npm run test:playwright', { stdio: 'inherit' });
-      }
+      await runNpmCommand('npm run test:playwright');
       const playwrightEndTime = Date.now();
       console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
     } catch (error) {
@@ -65,7 +66,7 @@ waitOn({
       // Kill the server
       console.log('Stopping server...');
       if (process.platform === 'win32') {
-        runInMsys2Bash(`kill -9 ${server.pid}`);
+        execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
       } else {
         process.kill(server.pid, 'SIGKILL');
       }
