@@ -71,10 +71,10 @@ waitForServer()
     console.log(`Server is up and running after ${endTime - startTime}ms. Starting Playwright tests...`);
     
     try {
-      // Install Playwright browsers
+      // Install Playwright browsers without system dependencies
       console.log('Installing Playwright browsers...');
       try {
-        await runNpmCommand('npm exec -- playwright install --with-deps');
+        await runNpmCommand('npm exec -- playwright install chromium');
         console.log('Playwright browsers installed successfully.');
       } catch (error) {
         console.error('Error installing Playwright browsers:', error);
