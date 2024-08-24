@@ -23,6 +23,7 @@
     "browserify": "^17.0.0",
     "esmify": "^2.1.1",
     "@playwright/test": "^1.32.0",
-    "wait-on": "^7.0.1"
+    "wait-on": "^7.0.1",
+    "cross-env": "^7.0.3"
   }
 }
