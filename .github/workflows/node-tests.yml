@@ -22,6 +22,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm install
     - run: npm install -g npm@latest
-    - run: npm run build-browser || echo "build-browser script not found"
+    - run: npm run build-browser
     - run: npm test
-    - run: npm run test:integration || echo "test:integration script not found"
+    - run: npm run test:integration
+    - run: npm run test:playwright
