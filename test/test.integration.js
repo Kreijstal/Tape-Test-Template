@@ -72,19 +72,36 @@ function terminateServer(server) {
       return;
     }
     console.log('Stopping server...');
-    if (process.platform === 'win32') {
-      try {
-        execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
-      } catch (error) {
-        console.error('Error terminating server on Windows:', error);
+    
+    const forceKill = () => {
+      console.log('Force killing server...');
+      if (process.platform === 'win32') {
+        try {
+          execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
+        } catch (error) {
+          console.error('Error force terminating server on Windows:', error);
+        }
+      } else {
+        try {
+          process.kill(server.pid, 'SIGKILL');
+        } catch (error) {
+          console.error('Error force terminating server:', error);
+        }
       }
-    } else {
-      server.kill('SIGKILL');
-    }
+    };
+
+    const timeout = setTimeout(() => {
+      console.log('Server did not terminate gracefully. Force killing...');
+      forceKill();
+    }, 5000);  // Wait 5 seconds before force kill
+
     server.on('exit', () => {
+      clearTimeout(timeout);
       console.log('Server process terminated.');
       resolve();
     });
+
+    server.kill('SIGINT');  // Try SIGINT first
   });
 }
 
@@ -173,7 +190,7 @@ runTests();
 process.on('SIGINT', async () => {
   console.log('Received SIGINT.');
   await terminateServer(server);
-  process.exit();
+  process.exit(0);  // Ensure the process exits
 });
 
 // Log any uncaught exceptions
