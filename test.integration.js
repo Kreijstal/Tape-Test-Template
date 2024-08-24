@@ -25,19 +25,47 @@ function runNpmCommand(command) {
 // Start the server
 console.log('Creating server...');
 const server = spawn('npm', ['run', 'start'], { 
-  stdio: 'inherit',
+  stdio: 'pipe',
   shell: true
 });
-console.log('Server process created with PID:', server.pid);
+
+let serverPort;
+server.stdout.on('data', (data) => {
+  const output = data.toString();
+  console.log(output);
+  const match = output.match(/Server running at http:\/\/localhost:(\d+)/);
+  if (match) {
+    serverPort = parseInt(match[1], 10);
+    console.log(`Server started on port ${serverPort}`);
+  }
+});
+
+server.stderr.on('data', (data) => {
+  console.error(`Server error: ${data}`);
+});
 
 // Wait for the server to be available
 console.log('Waiting for server to be available...');
 const startTime = Date.now();
-waitOn({ 
-  resources: ['http://localhost:3000/health'],
-  timeout: 60000, // 60 seconds timeout
-  interval: 100,  // Check every 100ms
-})
+
+const waitForServer = () => {
+  return new Promise((resolve, reject) => {
+    const checkInterval = setInterval(() => {
+      if (serverPort) {
+        clearInterval(checkInterval);
+        waitOn({ 
+          resources: [`http://localhost:${serverPort}/health`],
+          timeout: 60000, // 60 seconds timeout
+          interval: 100,  // Check every 100ms
+        })
+          .then(resolve)
+          .catch(reject);
+      }
+    }, 100);
+  });
+};
+
+waitForServer()
   .then(async () => {
     const endTime = Date.now();
     console.log(`Server is up and running after ${endTime - startTime}ms. Starting Playwright tests...`);
@@ -68,7 +96,13 @@ waitOn({
       if (process.platform === 'win32') {
         execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
       } else {
-        process.kill(server.pid, 'SIGKILL');
+        try {
+          process.kill(server.pid, 'SIGKILL');
+        } catch (error) {
+          if (error.code !== 'ESRCH') {
+            console.error('Error killing server process:', error);
+          }
+        }
       }
       console.log('Server process terminated.');
       process.exit(process.exitCode);
