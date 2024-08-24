@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tape Test in Browser</title>
+</head>
+<body>
+    <h1>Tape Test Results</h1>
+    <pre id="test-results"></pre>
+    <div id="test-completion" style="display: none;"></div>
+    <script src="test.browser.js"></script>
+    <script>
+        // Capture console.log output
+        (function(){
+            var oldLog = console.log;
+            console.log = function (message) {
+                oldLog.apply(console, arguments);
+                var testResults = document.getElementById('test-results');
+                testResults.textContent += message + '\n';
+            };
+        })();
+    </script>
+</body>
+</html>
