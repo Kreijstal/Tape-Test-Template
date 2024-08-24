@@ -52,10 +52,25 @@ jobs:
         msystem: ${{ matrix.msystem }}
         update: true
         install: ${{ matrix.install }}
-    - name: Run tests
+    - name: Set up Node.js environment
+      shell: msys2 {0}
+      run: |
+        echo "Checking Node.js and npm versions:"
+        node --version
+        npm --version
+        echo "Updating PATH:"
+        echo "$MSYS2_PATH" >> $GITHUB_PATH
+        echo "$(cygpath -w $(npm root -g))" >> $GITHUB_PATH
+        echo "$(cygpath -w $(npm bin -g))" >> $GITHUB_PATH
+
+    - name: Install dependencies
       shell: msys2 {0}
       run: |
         npm install
+
+    - name: Run tests
+      shell: msys2 {0}
+      run: |
         npm run build-browser
         npm test
         npm run test:integration
