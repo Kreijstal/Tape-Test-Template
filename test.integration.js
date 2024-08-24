@@ -15,7 +15,7 @@ function runInMsys2Bash(command) {
 
 // Start the server
 console.log('Creating server...');
-const server = spawn('bash', ['-c', 'npm run start'], { 
+const server = spawn('npm', ['run', 'start'], { 
   stdio: 'inherit',
   shell: true
 });
@@ -67,7 +67,7 @@ waitOn({
       if (process.platform === 'win32') {
         runInMsys2Bash(`kill -9 ${server.pid}`);
       } else {
-        server.kill('SIGKILL');
+        process.kill(server.pid, 'SIGKILL');
       }
       console.log('Server process terminated.');
       process.exit(process.exitCode);
@@ -79,7 +79,7 @@ waitOn({
     if (process.platform === 'win32') {
       execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
     } else {
-      server.kill();
+      process.kill(server.pid, 'SIGKILL');
     }
     console.log('Server process terminated.');
     process.exitCode = 1;
@@ -92,7 +92,7 @@ process.on('SIGINT', () => {
   if (process.platform === 'win32') {
     execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
   } else {
-    server.kill();
+    process.kill(server.pid, 'SIGKILL');
   }
   console.log('Server process terminated.');
   process.exit();
@@ -104,7 +104,7 @@ process.on('uncaughtException', (error) => {
   if (process.platform === 'win32') {
     execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
   } else {
-    server.kill();
+    process.kill(server.pid, 'SIGKILL');
   }
   console.log('Server process terminated due to uncaught exception.');
   process.exit(1);
@@ -116,7 +116,7 @@ process.on('unhandledRejection', (reason, promise) => {
   if (process.platform === 'win32') {
     execSync(`taskkill /pid ${server.pid} /T /F`, { stdio: 'ignore' });
   } else {
-    server.kill();
+    process.kill(server.pid, 'SIGKILL');
   }
   console.log('Server process terminated due to unhandled rejection.');
   process.exit(1);
