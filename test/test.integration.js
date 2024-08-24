@@ -2,6 +2,7 @@ const { spawn, exec, execSync } = require('child_process');
 const waitOn = require('wait-on');
 const net = require('net');
 const path = require('path');
+const fs = require('fs');
 
 console.log('Starting integration test...');
 
@@ -178,6 +179,19 @@ async function runTests() {
     await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
     const playwrightEndTime = Date.now();
     console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
+
+    // Ensure test-results directory exists
+    const fs = require('fs');
+    const testResultsDir = path.join(__dirname, '..', 'test-results');
+    if (!fs.existsSync(testResultsDir)) {
+      fs.mkdirSync(testResultsDir, { recursive: true });
+    }
+
+    // Log contents of test-results directory
+    console.log('Contents of test-results directory:');
+    const testResults = fs.readdirSync(testResultsDir);
+    console.log(testResults.length ? testResults : 'Directory is empty');
+
   } catch (error) {
     console.error('Error during test execution:', error);
     process.exitCode = 1;
