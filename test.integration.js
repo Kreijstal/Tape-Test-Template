@@ -84,7 +84,7 @@ waitForServer()
       // Run the Playwright tests
       console.log('Executing Playwright tests...');
       const playwrightStartTime = Date.now();
-      await runNpmCommand(`cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
+      await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} npm run test:playwright`);
       const playwrightEndTime = Date.now();
       console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
     } catch (error) {
