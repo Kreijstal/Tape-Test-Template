@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node test.js",
     "build-browser": "browserify test.js > test.browser.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:playwright": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
   "devDependencies": {
     "browser-resolve": "^2.0.0",
     "browserify": "^17.0.0",
-    "esmify": "^2.1.1"
+    "esmify": "^2.1.1",
+    "@playwright/test": "^1.32.0"
   }
 }
