@@ -1,8 +1,9 @@
 const express = require('express');
 const path = require('path');
+const net = require('net');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const initialPort = process.env.PORT || 3000;
 
 // Serve static files from the current directory
 app.use(express.static(__dirname));
@@ -17,19 +18,42 @@ app.get('/health', (req, res) => {
   res.status(200).send('OK');
 });
 
-const server = app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+function isPortAvailable(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+      .once('error', () => resolve(false))
+      .once('listening', () => {
+        server.close();
+        resolve(true);
+      })
+      .listen(port);
+  });
+}
 
-// Handle server errors
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${port} is already in use. Trying another port...`);
-    setTimeout(() => {
-      server.close();
-      server.listen(0); // Let the OS assign an available port
-    }, 1000);
-  } else {
-    console.error('Server error:', error);
+async function startServer(port) {
+  try {
+    console.log(`Attempting to start server on port ${port}...`);
+    const available = await isPortAvailable(port);
+    
+    if (!available) {
+      console.log(`Port ${port} is not available. Trying another port...`);
+      return startServer(0); // Let the OS assign an available port
+    }
+
+    const server = app.listen(port, () => {
+      const actualPort = server.address().port;
+      console.log(`Server running at http://localhost:${actualPort}`);
+    });
+
+    server.on('error', (error) => {
+      console.error('Server error:', error);
+    });
+
+    return server;
+  } catch (error) {
+    console.error('Error starting server:', error);
+    process.exit(1);
   }
-});
+}
+
+startServer(initialPort);

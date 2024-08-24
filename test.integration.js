@@ -74,7 +74,7 @@ waitForServer()
       // Install Playwright browsers
       console.log('Installing Playwright browsers...');
       try {
-        await runNpmCommand('npm exec -- playwright install');
+        await runNpmCommand('npm exec -- playwright install --with-deps');
         console.log('Playwright browsers installed successfully.');
       } catch (error) {
         console.error('Error installing Playwright browsers:', error);
@@ -84,7 +84,7 @@ waitForServer()
       // Run the Playwright tests
       console.log('Executing Playwright tests...');
       const playwrightStartTime = Date.now();
-      await runNpmCommand('npm run test:playwright');
+      await runNpmCommand(`npm run test:playwright -- --url http://localhost:${serverPort}`);
       const playwrightEndTime = Date.now();
       console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
     } catch (error) {
