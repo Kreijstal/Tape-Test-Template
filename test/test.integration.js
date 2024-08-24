@@ -176,7 +176,7 @@ async function runTests() {
     // Run the Playwright tests
     console.log('Executing Playwright tests...');
     const playwrightStartTime = Date.now();
-    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} playwright test --config=playwright.config.js`);
+    await runNpmCommand(`npx cross-env TEST_URL=http://localhost:${serverPort} playwright test --config=playwright.config.js --reporter=list`);
     const playwrightEndTime = Date.now();
     console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
 
