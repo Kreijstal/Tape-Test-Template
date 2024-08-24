@@ -180,28 +180,6 @@ async function runTests() {
     const playwrightEndTime = Date.now();
     console.log(`Playwright tests completed successfully in ${playwrightEndTime - playwrightStartTime}ms.`);
 
-    // Ensure test-results directory exists
-    const fs = require('fs');
-    const testResultsDir = path.join(__dirname, '..', 'test-results');
-    if (!fs.existsSync(testResultsDir)) {
-      fs.mkdirSync(testResultsDir, { recursive: true });
-    }
-
-    // Log contents of test-results directory
-    console.log('Contents of test-results directory:');
-    const testResults = fs.readdirSync(testResultsDir, { withFileTypes: true });
-    if (testResults.length) {
-      testResults.forEach(dirent => {
-        if (dirent.isDirectory()) {
-          const subDirContents = fs.readdirSync(path.join(testResultsDir, dirent.name));
-          console.log(`${dirent.name}/: ${subDirContents.join(', ')}`);
-        } else {
-          console.log(dirent.name);
-        }
-      });
-    } else {
-      console.log('Directory is empty');
-    }
 
   } catch (error) {
     console.error('Error during test execution:', error);
