@@ -16,5 +16,5 @@ module.exports = defineConfig({
     ['html', { outputFolder: 'test-results/html-report' }],
     ['json', { outputFile: 'test-results/results.json' }]
   ],
-  outputDir: 'test-results',
+  outputDir: 'test-results/artifacts',
 });
