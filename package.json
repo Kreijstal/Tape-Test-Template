@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js",
-    "build-browser": "browserify test.js > test.browser.js",
+    "test": "node test/test.js",
+    "build-browser": "browserify test/test.js > test/test.browser.js",
     "start": "node server.js",
     "test:playwright": "playwright test",
-    "test:integration": "node test.integration.js"
+    "test:integration": "node test/test.integration.js"
   },
   "keywords": [],
   "author": "",
