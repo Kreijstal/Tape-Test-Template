@@ -35,6 +35,34 @@ function runNpmCommand(command) {
   });
 }
 
+// Function to terminate any process running on a specific port
+async function terminateProcessOnPort(port) {
+  if (process.platform === 'win32') {
+    try {
+      const result = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf-8' });
+      const match = result.match(/LISTENING\s+(\d+)/);
+      if (match) {
+        const pid = match[1];
+        execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
+        console.log(`Terminated process on port ${port}`);
+      }
+    } catch (error) {
+      console.error(`Error terminating process on port ${port}:`, error);
+    }
+  } else {
+    try {
+      const result = execSync(`lsof -i :${port} -t`, { encoding: 'utf-8' });
+      if (result) {
+        const pid = result.trim();
+        execSync(`kill -9 ${pid}`, { stdio: 'ignore' });
+        console.log(`Terminated process on port ${port}`);
+      }
+    } catch (error) {
+      console.error(`Error terminating process on port ${port}:`, error);
+    }
+  }
+}
+
 // Function to terminate the server
 function terminateServer(server) {
   return new Promise((resolve) => {
@@ -63,11 +91,13 @@ let server;
 
 async function runTests() {
   try {
-    // Check if port 3000 is already in use
+    // Check if port 3000 is already in use and terminate the process if it is
     const portInUse = await isPortInUse(3000);
     if (portInUse) {
-      console.error('Port 3000 is already in use. Please terminate the existing process and try again.');
-      process.exit(1);
+      console.log('Port 3000 is in use. Attempting to terminate the existing process...');
+      await terminateProcessOnPort(3000);
+      // Wait a bit to ensure the port is released
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
     // Start the server
