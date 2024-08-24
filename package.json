@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "build-browser": "npx browserify test.js > test.browser.js"
   },
   "keywords": [],
   "author": "",
