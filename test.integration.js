@@ -24,8 +24,15 @@ waitOn({
     try {
       // Install Playwright browsers
       console.log('Installing Playwright browsers...');
-      execSync('npx playwright install', { stdio: 'inherit' });
-      console.log('Playwright browsers installed successfully.');
+      try {
+        const installOutput = execSync('npx playwright install', { stdio: 'pipe' }).toString();
+        console.log('Playwright browsers installed successfully.');
+      } catch (error) {
+        console.error('Error installing Playwright browsers:');
+        console.error(error.stdout?.toString());
+        console.error(error.stderr?.toString());
+        throw error;
+      }
 
       // Run the Playwright tests
       console.log('Executing Playwright tests...');
