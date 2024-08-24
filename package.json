@@ -6,7 +6,8 @@
     "test": "node test.js",
     "build-browser": "browserify test.js > test.browser.js",
     "start": "node server.js",
-    "test:playwright": "playwright test"
+    "test:playwright": "playwright test",
+    "test:integration": "node test.integration.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +22,7 @@
     "browser-resolve": "^2.0.0",
     "browserify": "^17.0.0",
     "esmify": "^2.1.1",
-    "@playwright/test": "^1.32.0"
+    "@playwright/test": "^1.32.0",
+    "wait-on": "^7.0.1"
   }
 }
