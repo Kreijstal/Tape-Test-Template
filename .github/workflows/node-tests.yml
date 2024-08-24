@@ -32,3 +32,31 @@ jobs:
     - run: npm test
     - run: npm run test:integration
     - run: npm run test:playwright
+
+  test-msys2:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - msystem: MINGW64
+            install: mingw-w64-x86_64-nodejs
+          - msystem: UCRT64
+            install: mingw-w64-ucrt-x86_64-nodejs
+          - msystem: CLANG64
+            install: mingw-w64-clang-x86_64-nodejs
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: ${{ matrix.msystem }}
+        update: true
+        install: ${{ matrix.install }}
+    - name: Run tests
+      shell: msys2 {0}
+      run: |
+        npm install
+        npm run build-browser
+        npm test
+        npm run test:integration
+        npm run test:playwright
