@@ -9,9 +9,9 @@ test('Hello World', function (t) {
   
   t.on('end', function () {
     console.log('Test ended');
-    testUtils.updateCompletionElement('Tests completed successfully');
   });
 });
 
+
 // Check if no tests ran
-testUtils.checkNoTestsRan();
+testUtils.checkNoTestsRan(test);
