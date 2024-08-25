@@ -1,5 +1,6 @@
 function updateCompletionElement(message) {
   if (typeof document !== 'undefined') {
+    window.testsCompleted=true;
     var completionElement = document.getElementById('test-completion');
     if (completionElement) {
       completionElement.textContent = message;
@@ -13,7 +14,10 @@ function updateCompletionElement(message) {
   }
 }
 
-function checkNoTestsRan() {
+function checkNoTestsRan(test) {
+  test.onFinish(()=>{
+    updateCompletionElement('Tests completed successfully');
+  });
   setTimeout(function() {
     if (typeof document !== 'undefined' && document.getElementById('test-completion').style.display === 'none') {
       console.log('No tests ran, updating completion element');

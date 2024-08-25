@@ -18,7 +18,7 @@ test('browser test runs successfully', async ({ page }) => {
 
     throw error;
   }
-
+  await page.waitForFunction(() => window.testsCompleted === true, { timeout: 9000 });
   // Get the text content of the test completion element
   const completionText = await page.textContent('#test-completion');
   console.log('Completion text:', completionText);
