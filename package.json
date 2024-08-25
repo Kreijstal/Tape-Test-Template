@@ -6,7 +6,7 @@
     "test": "node test/test.js",
     "build-browser": "browserify test/test.js > test/test.browser.js",
     "start": "node test/server.js",
-    "test:playwright": "playwright test",
+    "test:playwright": "playwright test test/playwright.test.js",
     "test:integration": "node test/test.integration.js"
   },
   "keywords": [],
