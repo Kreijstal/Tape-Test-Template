@@ -14,7 +14,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "cjstoesm": "^2.1.2",
+    "cjstoesm": "^3.0.0",
     "express": "^4.17.1",
     "tape": "^5.8.1"
   },
