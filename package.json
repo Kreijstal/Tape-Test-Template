@@ -15,7 +15,7 @@
   "description": "",
   "dependencies": {
     "cjstoesm": "^2.1.2",
-    "express": "^4.17.1",
+    "express": "^5.0.0",
     "tape": "^5.8.1"
   },
   "devDependencies": {
